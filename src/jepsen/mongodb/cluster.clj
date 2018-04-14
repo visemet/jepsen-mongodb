@@ -82,7 +82,7 @@
 (defn- write-config-file!
   [test node]
   (mcontrol/exec test
-    :echo (-> "mongod.conf" io/resource slurp
+    :echo (-> (:mongod-conf test) io/resource slurp
               (str/replace #"%ENABLE_MAJORITY_READ_CONCERN%"
                            (str (= (:read-concern test) :majority)))
               (str/replace #"%PATH_PREFIX%" (mu/path-prefix test node))

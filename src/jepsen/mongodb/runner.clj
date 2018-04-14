@@ -149,6 +149,10 @@
     :default "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1"
     :validate [#(.isAbsolute (io/file %)) "Must be an absolute path"]]
 
+   [nil "--mongod-conf PATH"
+    "Path relative to the resources/ directory to the MongoDB configuration file template to use"
+    :default "mongod.conf"]
+
    [nil "--mongobridge-offset INT"
     "Number of port values to stagger mongod processes ahead of mongobridge processes"
     :default  100
