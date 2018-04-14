@@ -59,7 +59,7 @@
     (merge
       opts
       {:client (client opts)
-       :concurrency (count (:nodes opts))
+       :concurrency 30
        :generator (->> (range)
                        (map (fn [x] {:type :invoke, :f :add, :value x}))
                        gen/seq

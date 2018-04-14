@@ -164,7 +164,7 @@
       (dissoc opts :read-concern)
       {:client (client opts)
        :read-concern :majority
-       :concurrency  (count (:nodes opts))
+       :concurrency  30
        ; Reserve a single thread for reads and let all other threads do writes.
        :generator (gen/reserve 1 (read-gen read-interval-secs)
                                  (write-gen write-interval-secs))
