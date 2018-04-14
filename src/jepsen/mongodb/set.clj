@@ -57,6 +57,7 @@
   (mongodb-test
     "set"
     (merge
+      opts
       {:client (client opts)
        :concurrency (count (:nodes opts))
        :generator (->> (range)
@@ -70,5 +71,4 @@
        :checker (checker/compose
                   {:set      (checker/set)
                    :timeline (timeline/html)
-                   :perf     (checker/perf)})}
-      opts)))
+                   :perf     (checker/perf)})})))

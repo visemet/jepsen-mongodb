@@ -157,6 +157,11 @@
   (mongodb-test
     "read-concern-majority"
     (merge
+      ;; The clients for this test always uses a :majority read concern, so we
+      ;; make sure that the options for the MongoDB test are also set to
+      ;; :majority read concern, so that the mongod processes are started with
+      ;; --enableMajorityReadConcern.
+      (dissoc opts :read-concern)
       {:client (client opts)
        :read-concern :majority
        :concurrency  (count (:nodes opts))
@@ -167,9 +172,4 @@
        :checker (checker/compose
                   {:read-concern-majority (rcmajority-checker)
                    :timeline              (timeline/html)
-                   :perf                  (checker/perf)})}
-      ;; The clients for this test always uses a :majority read concern, so we
-      ;; make sure that the options for the MongoDB test are also set to
-      ;; :majority read concern, so that the mongod processes are started with
-      ;; --enableMajorityReadConcern.
-      (dissoc opts :read-concern))))
+                   :perf                  (checker/perf)})})))

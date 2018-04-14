@@ -121,8 +121,9 @@
          " r:" (name (:read-concern opts))
          " w:" (name (:write-concern opts)))
     (merge
+      opts
       {:client        (client opts)
-       :concurrency   100
+       :concurrency   30
        :generator     (->> (independent/concurrent-generator
                              10
                              (range)
@@ -138,5 +139,4 @@
        :checker       (checker/compose
                         {:linear  (independent/checker (checker/linearizable))
                          :timeline (independent/checker (timeline/html))
-                         :perf     (checker/perf)})}
-      opts)))
+                         :perf     (checker/perf)})})))
