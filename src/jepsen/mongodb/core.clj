@@ -171,6 +171,62 @@
                                                  pprint)))
     (Thread/sleep 1000)))
 
+(defn await-stable-checkpoint
+  "Blocks until the node has taken a stable checkpoint if applicable to the
+  storage engine. This ensures that killing a node won't cause it to need to do
+  an initial sync after being restarted."
+  [test node conn]
+  ;; We wait until the primary is accepting writes and all other nodes have
+  ;; finished their initial sync.
+  (if (= node (jepsen/primary test))
+    (do (info node "waiting until node is in state PRIMARY and accepting writes")
+        (while (not (:ismaster (replica-set-master? conn)))
+          (Thread/sleep 1000)))
+    (do (info node "waiting until node is in state SECONDARY")
+        (while (not (:secondary (replica-set-master? conn)))
+          (Thread/sleep 1000))))
+
+  (jepsen/synchronize test)
+
+  (when (= node (jepsen/primary test))
+    ;; Algorithm precondition: All nodes must be in state PRIMARY or
+    ;; SECONDARY.
+    ;;
+    ;; 1. Perform a majority write. This will guarantee the primary updates
+    ;; its commit point to the time of this write.
+    ;;
+    ;; 2. Perform a second write. This will guarantee that all nodes have
+    ;; updated their commit point to a time that is >= the previous write.
+    ;; That will trigger a stable checkpoint on all nodes.
+    (info node "performing no-op writes to trigger stable checkpoint")
+    (m/admin-command! conn
+                      :appendOplogNote 1
+                      :data {:awaitStableCheckpoint 1}
+                      :writeConcern {:w :majority})
+    (m/admin-command! conn
+                      :appendOplogNote 1
+                      :data {:awaitStableCheckpoint 2}
+                      :writeConcern {:w :majority}))
+
+  ;; Wait until the node reports that it has taken a stable checkpoint if
+  ;; applicable to the storage engine.
+  ;;
+  ;; The "lastStableCheckpointTimestamp" field contains the timestamp of a
+  ;; previous checkpoint taken at a stable timestamp. At startup recovery,
+  ;; this field contains the timestamp reflected in the data. After startup
+  ;; recovery, it may be lagged and there may be a stable checkpoint at a
+  ;; newer timestamp.
+  ;;
+  ;; A missing "lastStableCheckpointTimestamp" field indicates that the
+  ;; storage engine does not support "recover to a stable timestamp".
+  ;;
+  ;; A null timestamp for the "lastStableCheckpointTimestamp" field indicates
+  ;; that the storage engine supports "recover to a stable timestamp" but does
+  ;; not have a stable checkpoint yet.
+  (while (= (org.bson.BsonTimestamp.)
+            (:lastStableCheckpointTimestamp (replica-set-status conn)))
+    (Thread/sleep 1000)))
+
 (defn target-replica-set-config
   "Generates the config for a replset in a given test."
   [test]
@@ -232,6 +288,11 @@
     (await-primary conn)
 
     (info node "primary is" (str (primary conn)))
+
+    ; We wait until all nodes have taken a stable check if applicable to their
+    ; storage engine. This ensures that if the nemesis kills them later, then
+    ; they won't go back into initial sync.
+    (await-stable-checkpoint test node conn)
     (jepsen/synchronize test)))
 
 (defn db
