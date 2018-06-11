@@ -22,3 +22,17 @@
   node's data directory"
   [test node & suffixes]
   (apply str (:working-dir test) "/" (name node) suffixes))
+
+(defn retry-on-network-error
+  "Calls `func` up to `1 + retries` times."
+  [func retries]
+  (loop [iter 0]
+    (let [res (try
+                {:value (func)}
+                (catch com.mongodb.MongoSocketException e
+                  (if (>= iter retries)
+                    (throw e)
+                    {:error e})))]
+      (if (contains? res :value)
+        (:value res)
+        (recur (+ iter 1))))))
