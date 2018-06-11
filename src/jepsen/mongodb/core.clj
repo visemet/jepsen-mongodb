@@ -9,7 +9,6 @@
             [jepsen [core      :as jepsen]
                     [db        :as db]
                     [util      :as util :refer [meh
-                                                real-pmap
                                                 with-thread-name
                                                 fcatch
                                                 exception?
@@ -34,7 +33,7 @@
             [jepsen.mongodb.mongo :as m]
             [jepsen.mongodb.net :as mnet]
             [jepsen.mongodb.time :as mt]
-            [jepsen.mongodb.util :as mu]
+            [jepsen.mongodb.util :as mu :refer [real-pmap]]
             [knossos [core :as knossos]
                      [model :as model]])
   (:import (clojure.lang ExceptionInfo)))
