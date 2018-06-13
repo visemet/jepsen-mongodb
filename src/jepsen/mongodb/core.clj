@@ -472,7 +472,10 @@
         (case (:f op)
           :isolate (->> conns
                         (real-pmap (fn [[node conn]]
-                          (when (= (m/server-address node) (primary conn))
+                          (when (= (m/server-address node)
+                                   (mu/retry-on-network-error
+                                     (partial primary conn)
+                                     1))
                             (info node "believes itself a primary")
                             (->> (nemesis/split-one node (:nodes test))
                                  nemesis/complete-grudge
@@ -486,7 +489,10 @@
 
           :kill (->> conns
                      (real-pmap (fn [[node conn]]
-                       (when (= (m/server-address node) (primary conn))
+                       (when (= (m/server-address node)
+                                (mu/retry-on-network-error
+                                  (partial primary conn)
+                                  1))
                          (info node "believes itself a primary")
                          (c/with-session node (get (:sessions test) node)
                            (mc/kill! test node))
