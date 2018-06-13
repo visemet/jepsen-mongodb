@@ -2,8 +2,8 @@
   "MongoDB specific controls for network manipulation."
   (:require [clj-time.core :as time]
             [jepsen.net :as net]
-            [jepsen.util :refer [real-pmap]]
             [jepsen.mongodb.mongo :as m]
+            [jepsen.mongodb.util :refer [real-pmap]]
             [clojure.tools.logging :refer [info warn]])
   (:import (org.joda.time Period)))
 
