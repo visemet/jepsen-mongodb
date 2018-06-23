@@ -182,7 +182,11 @@
         (while (not (:ismaster (replica-set-master? conn)))
           (Thread/sleep 1000)))
     (do (info node "waiting until node is in state SECONDARY")
-        (while (not (:secondary (replica-set-master? conn)))
+        ; It is possible that a non-`jepsen/primary` node was elected primary
+        ; when the replica set was initiated and needs to step down. We simply
+        ; retry running the isMaster command.
+        (while (not (:secondary (mu/retry-on-network-error
+                                  (partial replica-set-master? conn))))
           (Thread/sleep 1000))))
 
   (jepsen/synchronize test)

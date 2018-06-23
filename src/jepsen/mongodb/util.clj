@@ -24,18 +24,24 @@
   (apply str (:working-dir test) "/" (name node) suffixes))
 
 (defn retry-on-network-error
-  "Calls `func` up to `1 + retries` times."
-  [func retries]
-  (loop [iter 0]
-    (let [res (try
-                {:value (func)}
-                (catch com.mongodb.MongoSocketException e
-                  (if (>= iter retries)
-                    (throw e)
-                    {:error e})))]
-      (if (contains? res :value)
-        (:value res)
-        (recur (+ iter 1))))))
+  "Calls `func` up to `1 + retries` times.
+
+  If the `retries` parameter is omitted, then `func` is called forever until it
+  succeeds or a non-network error occurs."
+  ([func]
+   (retry-on-network-error func :infinity))
+
+  ([func retries]
+   (loop [iter 0]
+     (let [res (try
+                 {:value (func)}
+                 (catch com.mongodb.MongoSocketException e
+                   (if (and (not= retries :infinity) (>= iter retries))
+                     (throw e)
+                     {:error e})))]
+       (if (contains? res :value)
+         (:value res)
+         (recur (+ iter 1)))))))
 
 ;; Adapted from the jepsen.util/real-pmap function of Jepsen version 0.1.8 with
 ;; modifications to ensure that all launched futures are waited on even if the
